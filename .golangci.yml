@@ -1,0 +1,54 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - govet
+    - misspell
+    - copyloopvar
+    - durationcheck
+    - reassign
+  settings:
+    govet:
+      enable:
+        - assign
+        - atomic
+        - bools
+        - buildtag
+        - cgocall
+        - composites
+        - copylocks
+        - directive
+        - errorsas
+        - httpresponse
+        - loopclosure
+        - lostcancel
+        - nilfunc
+        - printf
+        - shift
+        - stdmethods
+        - stringintconv
+        - structtag
+        - tests
+        - unmarshal
+        - unreachable
+        - unsafeptr
+        - unusedresult
+    misspell:
+      locale: US
+  exclusions:
+    paths:
+      - webgui/
+    rules: []
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

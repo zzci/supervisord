@@ -1,0 +1,54 @@
+version: 2
+
+project_name: supervisord
+
+env:
+  - CGO_ENABLED=0
+
+builds:
+  - id: supervisord
+    main: ./cmd/supervisord
+    binary: supervisord
+    flags:
+      - -trimpath
+    ldflags:
+      - "-s -w -extldflags -static"
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    ids: [supervisord]
+    formats: [tar.gz]
+    # Tarball name template:
+    #   supervisord_<ver>_Linux_x86_64.tar.gz
+    #   supervisord_<ver>_Linux_arm64.tar.gz
+    #   supervisord_<ver>_Darwin_x86_64.tar.gz
+    #   supervisord_<ver>_Darwin_arm64.tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    # Flat tarball: extracting yields `supervisord` (and the licenses) at
+    # the top level so a downstream Dockerfile can do
+    # `tar -xz -C /usr/local/bin/` without peeling a wrapper directory.
+    wrap_in_directory: false
+    files:
+      - LICENSE
+      - NOTICE.md
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: zzci
+    name: supervisord
+  draft: false
+  prerelease: auto
+  name_template: "{{.ProjectName}}-v{{.Version}}"

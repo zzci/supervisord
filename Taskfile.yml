@@ -1,0 +1,95 @@
+version: "3"
+
+# Taskfile for zzci/supervisord. Install Task: https://taskfile.dev
+
+vars:
+  DIST_DIR: dist
+  STATIC_LDFLAGS: -s -w -extldflags -static
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  fmt:
+    desc: Format Go sources via golangci-lint (gofmt + goimports).
+    cmds:
+      - golangci-lint fmt
+
+  lint:
+    desc: Run golangci-lint v2.
+    cmds:
+      - golangci-lint run ./...
+
+  vet:
+    desc: Run go vet.
+    cmds:
+      - go vet ./...
+
+  test:
+    desc: Run race-enabled unit tests with coverage profile.
+    cmds:
+      - go test -race -coverprofile=coverage.out ./...
+
+  test:e2e:
+    desc: Run end-to-end tests on the host (spawns a real supervisord).
+    cmds:
+      - go test -tags e2e -count=1 -timeout 5m ./tests/e2e/...
+
+  test:e2e:docker:
+    desc: Run the e2e suite inside an ephemeral container; host stays untouched.
+    vars:
+      IMG: zzci-supervisord-e2e:dev
+    cmds:
+      - docker build -f tests/e2e/Dockerfile -t {{.IMG}} .
+      - defer: docker image rm -f {{.IMG}} >/dev/null 2>&1 || true
+      - docker run --rm {{.IMG}}
+
+  build:
+    desc: Build supervisord into ./dist.
+    cmds:
+      - mkdir -p {{.DIST_DIR}}
+      - go build -o {{.DIST_DIR}}/supervisord ./cmd/supervisord
+
+  build:static:
+    desc: Build a fully static linux binary suitable for FROM scratch.
+    env:
+      CGO_ENABLED: "0"
+      GOOS: linux
+    cmds:
+      - mkdir -p {{.DIST_DIR}}
+      - go build -trimpath -ldflags "{{.STATIC_LDFLAGS}}" -o {{.DIST_DIR}}/supervisord ./cmd/supervisord
+
+  clean:
+    desc: Remove build artefacts.
+    cmds:
+      - rm -rf {{.DIST_DIR}} bin coverage.out coverage.html
+
+  vuln:
+    desc: Run govulncheck.
+    cmds:
+      - govulncheck ./...
+
+  sec:
+    desc: Run gosec.
+    cmds:
+      - gosec -quiet ./...
+
+  tidy:
+    desc: Run go mod tidy.
+    cmds:
+      - go mod tidy
+
+  docker:
+    desc: Build the docker image (zzci/supervisord:dev).
+    cmds:
+      - docker build -t zzci/supervisord:dev .
+
+  ci:
+    desc: Run the full local CI gate.
+    cmds:
+      - task: lint
+      - task: vet
+      - task: test
+      - task: vuln
+      - task: build

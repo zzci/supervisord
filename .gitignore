@@ -1,0 +1,21 @@
+.idea
+.tags*
+.vscode
+
+# Build artifacts
+/supervisord
+/supervisord.exe
+bin/
+dist/
+debug
+go-debug.json
+
+# Test outputs
+test.log*
+**/test.log*
+coverage.out
+coverage.html
+
+# Misc
+vendor/
+upx
